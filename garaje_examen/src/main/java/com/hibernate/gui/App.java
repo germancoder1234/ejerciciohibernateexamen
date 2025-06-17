@@ -20,7 +20,7 @@ public class App {
     private JTextField textFieldCodigo;
     private JTextField textFieldNumeroPlanta;
     private JTextField textFieldNumeroPlazas;
-    private JLabel QuedanPocasPlazas;
+    private JLabel lblAlertaPlazas;
 
     public static void main(String[] args) {
         EventQueue.invokeLater(() -> {
@@ -32,22 +32,20 @@ public class App {
             }
         });
     }
-    private void actualizarAlertaPlazas ( JLabel quedanPocasPlazas,int numeroPlazasLibres) {
-    	
-   	 if (numeroPlazasLibres<10&&numeroPlazasLibres>0) {
-        	
-   		
-   		quedanPocasPlazas.setText("quedan pocas plazas");
-        	
-        }else {
-        	quedanPocasPlazas.setText("");
+
+    private void actualizarAlertaPlazas(int numeroPlazasLibres) {
+        if (numeroPlazasLibres < 10 && numeroPlazasLibres > 0) {
+            lblAlertaPlazas.setText("Quedan pocas plazas disponibles en esa planta");
+            lblAlertaPlazas.setForeground(Color.RED);
+        } else {
+            lblAlertaPlazas.setText("");
         }
-   }
-   
+    }
+
     public App() {
         initialize();
     }
-
+//funcion para cargar tabla mediante for each
     private void cargarTabla(PlazaDAO pDAO, DefaultTableModel modelo) {
         modelo.setRowCount(0);
         List<Plaza> plazas = pDAO.selectAllPlazas();
@@ -55,9 +53,19 @@ public class App {
             modelo.addRow(new Object[]{p.getId(), p.getNumeroPlanta(), p.getNumeroPlazasLibres()});
         }
     }
-
+    //misma funcion pero esta vez con for en vez de con un for each
+/*private void cargarTabla(PlazaDAO pDAO, DefaultTableModel modelo) {
+    modelo.setRowCount(0);
+    List<Plaza> plazas = pDAO.selectAllPlazas();
+    for (int i = 0; i < plazas.size(); i++) {
+        modelo.addRow(new Object[]{
+            plazas.get(i).getId(), 
+            plazas.get(i).getNumeroPlanta(), 
+            plazas.get(i).getNumeroPlazasLibres()
+        });
+    }
+}*/
     private void initialize() {
-    	
         DefaultTableModel modelo;
         PlazaDAO pDAO = new PlazaDAO();
          
@@ -82,13 +90,18 @@ public class App {
                 textFieldCodigo.setText(String.valueOf(model.getValueAt(indice, 0)));
                 textFieldNumeroPlanta.setText(String.valueOf(model.getValueAt(indice, 1)));
                 textFieldNumeroPlazas.setText(String.valueOf(model.getValueAt(indice, 2)));
+                actualizarAlertaPlazas(Integer.parseInt(textFieldNumeroPlazas.getText()));
             }
         });
-        
         
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBounds(28, 33, 535, 215);
         frame.getContentPane().add(scrollPane);
+
+        lblAlertaPlazas = new JLabel("");
+        lblAlertaPlazas.setBounds(28, 10, 400, 20);
+        lblAlertaPlazas.setForeground(Color.RED);
+        frame.getContentPane().add(lblAlertaPlazas);
 
         textFieldCodigo = new JTextField();
         textFieldCodigo.setEditable(false);
@@ -115,7 +128,7 @@ public class App {
                 pDAO.insertPlaza(p);
                 cargarTabla(pDAO, modelo);
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(frame, "Introduce numeros enteros .");
+                JOptionPane.showMessageDialog(frame, "Introduce numeros enteros.");
             }
         });
         btnInsertar.setBounds(28, 411, 103, 23);
@@ -127,11 +140,12 @@ public class App {
                 int id = Integer.parseInt(textFieldCodigo.getText());
                 int numeroPlanta = Integer.parseInt(textFieldNumeroPlanta.getText());
                 int numeroPlazasLibres = Integer.parseInt(textFieldNumeroPlazas.getText());
-                Plaza p=pDAO.selectPlazaById(id);
+                Plaza p = pDAO.selectPlazaById(id);
                 p.setNumeroPlanta(numeroPlanta);
                 p.setNumeroPlazasLibres(numeroPlazasLibres);
                 pDAO.updatePlaza(p);
                 cargarTabla(pDAO, modelo);
+                actualizarAlertaPlazas(numeroPlazasLibres);
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(frame, "Selecciona para actualizar.");
             }
@@ -145,6 +159,7 @@ public class App {
                 int id = Integer.parseInt(textFieldCodigo.getText());
                 pDAO.deletePlaza(id);
                 cargarTabla(pDAO, modelo);
+                lblAlertaPlazas.setText("");
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(frame, "selecciona para borrar.");
             }
@@ -158,7 +173,7 @@ public class App {
 
         JLabel lblNumeroPlaza = new JLabel("planta");
         lblNumeroPlaza.setBounds(16, 333, 46, 14);
-        frame.getContentPane().add(lblNumeroPlaza); quedanPocasPlazas.setBounds(235, 6, 70, 15);
+        frame.getContentPane().add(lblNumeroPlaza);
 
         JLabel lblNumeroPlanta = new JLabel("plazas libres");
         lblNumeroPlanta.setBounds(16, 363, 100, 14);
@@ -166,51 +181,49 @@ public class App {
         
         JButton btnAparcar = new JButton("Aparcar");
         btnAparcar.addActionListener(new ActionListener() {
-        	public void actionPerformed(ActionEvent e) {
-        		int id = Integer.parseInt(textFieldCodigo.getText());
-                int numeroPlanta = Integer.parseInt(textFieldNumeroPlanta.getText());
-                int numeroPlazasLibres = Integer.parseInt(textFieldNumeroPlazas.getText());
-                Plaza p=pDAO.selectPlazaById(id);
-                p.setNumeroPlanta(numeroPlanta);
-                p.setNumeroPlazasLibres(numeroPlazasLibres-1);
-                pDAO.updatePlaza(p);
-                cargarTabla(pDAO, modelo);
-        		
-        	}
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    int id = Integer.parseInt(textFieldCodigo.getText());
+                    int numeroPlazasLibres = Integer.parseInt(textFieldNumeroPlazas.getText());
+                    
+                    if (numeroPlazasLibres <= 0) {
+                        JOptionPane.showMessageDialog(frame, 
+                            "No quedan plazas disponibles en esta planta", 
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    
+                    Plaza p = pDAO.selectPlazaById(id);
+                    p.setNumeroPlazasLibres(numeroPlazasLibres - 1);
+                    pDAO.updatePlaza(p);
+                    cargarTabla(pDAO, modelo);
+                    actualizarAlertaPlazas(p.getNumeroPlazasLibres());
+                    
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(frame, "Selecciona una plaza válida.");
+                }
+            }
         });
         btnAparcar.setBounds(54, 503, 117, 25);
         frame.getContentPane().add(btnAparcar);
         
         JButton btnLiberar = new JButton("Liberar");
         btnLiberar.addActionListener(new ActionListener() {
-        	public void actionPerformed(ActionEvent e) {
-        		
-        		int id = Integer.parseInt(textFieldCodigo.getText());
-                int numeroPlanta = Integer.parseInt(textFieldNumeroPlanta.getText());
-                int numeroPlazasLibres = Integer.parseInt(textFieldNumeroPlazas.getText());
-                Plaza p=pDAO.selectPlazaById(id);
-                p.setNumeroPlanta(numeroPlanta);
-                p.setNumeroPlazasLibres(numeroPlazasLibres+1);
-                pDAO.updatePlaza(p);
-                cargarTabla(pDAO, modelo);
-        		
-        	}
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    int id = Integer.parseInt(textFieldCodigo.getText());
+                    int numeroPlazasLibres = Integer.parseInt(textFieldNumeroPlazas.getText());
+                    Plaza p = pDAO.selectPlazaById(id);
+                    p.setNumeroPlazasLibres(numeroPlazasLibres + 1);
+                    pDAO.updatePlaza(p);
+                    cargarTabla(pDAO, modelo);
+                    actualizarAlertaPlazas(p.getNumeroPlazasLibres());
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(frame, "Selecciona una plaza válida.");
+                }
+            }
         });
         btnLiberar.setBounds(258, 503, 117, 25);
         frame.getContentPane().add(btnLiberar);
-        
-    
-        JLabel quedanPocasPlazas = new JLabel("");
-        quedanPocasPlazas.setBounds(235, 6, 70, 15);
-        frame.getContentPane().add(quedanPocasPlazas);
-        frame.getContentPane().add(quedanPocasPlazas);
-     
-    
-        
-
-        
-       
-   
-        
     }
 }
