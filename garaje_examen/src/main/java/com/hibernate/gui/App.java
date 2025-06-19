@@ -186,12 +186,7 @@ public class App {
                     int id = Integer.parseInt(textFieldCodigo.getText());
                     int numeroPlazasLibres = Integer.parseInt(textFieldNumeroPlazas.getText());
                     
-                    if (numeroPlazasLibres <= 0) {
-                        JOptionPane.showMessageDialog(frame, 
-                            "No quedan plazas disponibles en esta planta", 
-                            "Error", JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
+                 
                     
                     Plaza p = pDAO.selectPlazaById(id);
                     p.setNumeroPlazasLibres(numeroPlazasLibres - 1);
